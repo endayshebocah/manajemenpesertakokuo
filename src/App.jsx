@@ -2877,7 +2877,7 @@ const ComplaintCard = ({ complaint, onDelete, onShowDetail, photo }) => {
             <div className="p-3 flex-grow">
                 <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-full bg-gray-700 flex-shrink-0 overflow-hidden">
+                        <div className="w-12 h-12 rounded-md bg-gray-700 flex-shrink-0 overflow-hidden">
                            {photo ? <img src={photo} alt={complaint.therapistName} className="w-full h-full object-cover"/> : <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-500 m-auto" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" /></svg>}
                         </div>
                         <div>
@@ -2947,6 +2947,17 @@ const ComplaintScreen = ({ onProcessComplaint }) => {
         });
     }, [complaints, filterStatus, searchTerm]);
 
+    const complaintsByBranch = useMemo(() => {
+        return filteredComplaints.reduce((acc, c) => {
+            const branch = c.cabang || 'Belum Ditentukan';
+            if (!acc[branch]) acc[branch] = [];
+            acc[branch].push(c);
+            return acc;
+        }, {});
+    }, [filteredComplaints]);
+
+    const sortedBranches = useMemo(() => Object.keys(complaintsByBranch).sort(), [complaintsByBranch]);
+
     const handleSaveComplaint = async (formData, complaintId) => {
         const success = await firestore.addOrUpdateComplaint(complaintId, formData);
         if (success) {
@@ -3006,18 +3017,25 @@ const ComplaintScreen = ({ onProcessComplaint }) => {
                     </select>
                 </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {filteredComplaints.length > 0 ? (
-                    filteredComplaints.map(c => {
-                        const therapist = activeTherapists.find(t => t.nama === c.therapistName);
-                        return <ComplaintCard 
-                                    key={c.id} 
-                                    complaint={c} 
-                                    onDelete={firestore.deleteComplaint}
-                                    onShowDetail={() => handleShowDetail(c)}
-                                    photo={therapist?.photo || null}
-                               />;
-                    })
+            <div className="space-y-6">
+                {sortedBranches.length > 0 ? (
+                    sortedBranches.map(branch => (
+                        <div key={branch}>
+                            <h3 className="text-xl font-bold text-sky-300 mb-3 pl-2 border-l-4 border-sky-500">{branch}</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                {complaintsByBranch[branch].map(c => {
+                                    const therapist = activeTherapists.find(t => t.nama === c.therapistName);
+                                    return <ComplaintCard 
+                                                key={c.id} 
+                                                complaint={c} 
+                                                onDelete={firestore.deleteComplaint}
+                                                onShowDetail={() => handleShowDetail(c)}
+                                                photo={therapist?.photo || null}
+                                           />;
+                                })}
+                            </div>
+                        </div>
+                    ))
                 ) : (
                     <p className="col-span-full text-center text-gray-400 py-10">Tidak ada data komplain yang cocok.</p>
                 )}
@@ -3313,9 +3331,7 @@ function AppContent() {
         trainer: currentUser?.nama || '',
     });
     setRecordToEdit(null);
-    setIsFormExpanded(true);
-    if (addFormRef.current) addFormRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, [allRecords, initialFormState, setFormValues, setRecordToEdit, currentUser]);
+  }, [initialFormState, setFormValues, setRecordToEdit, currentUser]);
 
   const handleProcessComplaint = useCallback((participant, complaint) => {
     const firstRecordWithPhoto = allRecords
@@ -3328,6 +3344,8 @@ function AppContent() {
         photo: firstRecordWithPhoto ? firstRecordWithPhoto.photo : (participant.photo || null),
         status: 'Tahap Ceking',
         trainer: currentUser?.nama || '',
+        cabang: complaint.cabang || '',
+        cekingType: complaint.complaintCategory || 'Reflexology',
     });
     setComplaintBeingProcessed(complaint);
     setRecordToEdit(null);
@@ -3774,6 +3792,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
