@@ -679,7 +679,7 @@ const CekingCard = React.memo(({ record, onCardClick }) => {
     );
 });
 
-const ParticipantDetailView = ({ participant, allRecords, onClose, onEdit, onDelete, onUpdateLatest }) => {
+const ParticipantDetailView = ({ participant, allRecords, onClose, onEdit, onDelete, onUpdateLatest, fromComplaint, onProcessComplaint }) => {
     const { userRole, showToast, db, openModal, closeModal, complaints } = useContext(AppContext);
     const [activeTab, setActiveTab] = useState('rincian');
     const [showAssessmentHistory, setShowAssessmentHistory] = useState(false);
@@ -1020,10 +1020,19 @@ const ParticipantDetailView = ({ participant, allRecords, onClose, onEdit, onDel
                        </button>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                       <button onClick={() => { onUpdateLatest(activeRecord); onClose(); }} className="px-4 py-2 text-sm bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700">Update Terbaru</button>
-                       <button onClick={() => { onEdit(activeRecord); onClose(); }} className="px-4 py-2 text-sm bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">Perbaiki</button>
-                       {userRole === 'admin' && (
-                            <button title="Hapus" onClick={() => handleDeleteClick(activeRecord.id, activeRecord.nama)} className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" /></svg></button>
+                       {fromComplaint && (
+                            <button onClick={() => onProcessComplaint(participant)} className="px-4 py-2 text-sm bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600">
+                                Proses Komplainan
+                            </button>
+                       )}
+                       {!fromComplaint && (
+                        <>
+                            <button onClick={() => { onUpdateLatest(activeRecord); onClose(); }} className="px-4 py-2 text-sm bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700">Update Terbaru</button>
+                            <button onClick={() => { onEdit(activeRecord); onClose(); }} className="px-4 py-2 text-sm bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">Perbaiki</button>
+                            {userRole === 'admin' && (
+                                <button title="Hapus" onClick={() => handleDeleteClick(activeRecord.id, activeRecord.nama)} className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" /></svg></button>
+                            )}
+                        </>
                        )}
                        <button onClick={onClose} className="px-6 py-2 text-sm bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700">Tutup</button>
                     </div>
@@ -2869,15 +2878,16 @@ const ComplaintCard = ({ complaint, onEdit, onDelete, onShowDetail, photo }) => 
                     </div>
                 )}
             </div>
-            <div className="bg-gray-900/50 p-2 flex justify-end gap-2 rounded-b-lg">
+            <div className="bg-gray-900/50 p-2 flex justify-end items-center gap-2 rounded-b-lg">
+                <button onClick={(e) => { e.stopPropagation(); onShowDetail(); }} className="text-xs px-3 py-1 bg-green-600 text-white rounded-md font-semibold hover:bg-green-700">Tindak Lanjut</button>
                 <button onClick={handleDeleteClick} title="Hapus" className="p-1.5 bg-gray-700 text-red-400 rounded-md hover:bg-red-900/50"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" /></svg></button>
-                <button onClick={handleFollowUpClick} className="text-xs px-3 py-1 bg-blue-600 rounded-md font-semibold">Tindak Lanjut</button>
+                <button onClick={handleFollowUpClick} className="text-xs px-3 py-1 bg-blue-600 rounded-md font-semibold">Ubah Status Komplain</button>
             </div>
         </div>
     );
 };
 
-const ComplaintScreen = () => {
+const ComplaintScreen = ({ onProcessComplaint }) => {
     const { complaints, openModal, allRecords, showToast } = useContext(AppContext);
     const { uniqueLatestRecords } = useRecords('', 'semua', '');
     const firestore = useFirestore();
@@ -2931,6 +2941,8 @@ const ComplaintScreen = () => {
                 onEdit: (rec) => showToast("Fungsi edit dari halaman ini belum diaktifkan."),
                 onDelete: firestore.softDeleteRecord,
                 onUpdateLatest: (rec) => showToast("Fungsi update dari halaman ini belum diaktifkan."),
+                fromComplaint: true,
+                onProcessComplaint: onProcessComplaint,
             });
         } else {
             showToast(`Data detail untuk ${therapistName} tidak ditemukan.`);
@@ -3274,6 +3286,24 @@ function AppContent() {
     if (addFormRef.current) addFormRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [allRecords, initialFormState, setFormValues, setRecordToEdit, currentUser]);
 
+  const handleProcessComplaint = useCallback((participant) => {
+    const firstRecordWithPhoto = allRecords
+        .filter(r => r.nama === participant.nama && r.photo)
+        .sort((a, b) => (a.createdAt?.toDate() || 0) - (b.createdAt?.toDate() || 0))[0];
+
+    setFormValues({
+        ...initialFormState,
+        nama: participant.nama,
+        photo: firstRecordWithPhoto ? firstRecordWithPhoto.photo : (participant.photo || null),
+        status: 'Tahap Ceking',
+        trainer: currentUser?.nama || '',
+    });
+    setRecordToEdit(null);
+    setIsFormExpanded(true);
+    if (addFormRef.current) addFormRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    closeModal();
+  }, [allRecords, initialFormState, setFormValues, setRecordToEdit, currentUser, closeModal]);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
         if (notificationBellRef.current && !notificationBellRef.current.contains(event.target)) {
@@ -3433,7 +3463,7 @@ function AppContent() {
         case 'cabang': return <CabangScreen {...screenProps} />;
         case 'izinAkses': return <AccessManagementScreen />;
         case 'jadwal': return <EvaluationScheduleScreen latestRecords={filteredRecords} allRecords={allRecords} onEdit={handleEditClick} onDelete={firestore.softDeleteRecord} onUpdateLatest={handleUpdateLatestClick} />;
-        case 'komplainan': return <ComplaintScreen />;
+        case 'komplainan': return <ComplaintScreen onProcessComplaint={handleProcessComplaint} />;
         case 'trash': return <TrashScreen deletedRecords={deletedRecords} onRestore={firestore.restoreRecord} onDeletePermanent={firestore.deleteRecordPermanent} />;
         default: return null;
     }
@@ -3682,6 +3712,8 @@ function App() {
 }
 
 export default App;
+
+
 
 
 
