@@ -1132,6 +1132,13 @@ const SkillsSummaryPopup = ({ onClose, allRecords, activeParticipants }) => {
         return analysis;
     }, [allRecords, activeParticipants]);
 
+    const branchColors = useMemo(() => [
+        'border-sky-500', 'border-emerald-500', 'border-amber-500', 'border-rose-500', 'border-violet-500', 'border-cyan-500', 'border-lime-500'
+    ], []);
+    const branchTextColors = useMemo(() => [
+        'text-sky-300', 'text-emerald-300', 'text-amber-300', 'text-rose-300', 'text-violet-300', 'text-cyan-300', 'text-lime-300'
+    ], []);
+
     const SkillBadge = ({ skill }) => {
         let colorClass = 'bg-gray-600';
         if (skill === 'Reflexology') colorClass = 'bg-blue-600';
@@ -1160,11 +1167,11 @@ const SkillsSummaryPopup = ({ onClose, allRecords, activeParticipants }) => {
                     <div>
                         <h3 className="text-2xl font-bold text-white mb-4">Rincian per Cabang</h3>
                         <div className="space-y-5">
-                            {Object.entries(skillsAnalysis.byBranch).map(([branch, staff], index) => (
-                                <div key={branch} className={`${index % 2 === 0 ? 'bg-gray-900/50' : 'bg-gray-800/60'} rounded-lg overflow-hidden border border-gray-700`}>
-                                    <h4 className="text-2xl font-bold text-sky-300 bg-gray-700/50 px-5 py-4 flex justify-between items-center">
+                            {Object.entries(skillsAnalysis.byBranch).sort(([a], [b]) => a.localeCompare(b)).map(([branch, staff], index) => (
+                                <div key={branch} className={`bg-gray-900/50 rounded-lg overflow-hidden border-2 ${branchColors[index % branchColors.length]}`}>
+                                    <h4 className={`text-2xl font-bold ${branchTextColors[index % branchTextColors.length]} bg-gray-800/60 px-5 py-4 flex justify-between items-center`}>
                                         <span>{branch}</span>
-                                        <span className="text-base bg-sky-500 px-3 py-1 rounded-full">{staff.length} Staf</span>
+                                        <span className={`text-lg font-bold bg-white/10 px-4 py-1.5 rounded-full`}>{staff.length} Staf</span>
                                     </h4>
                                     <div className="px-5 divide-y divide-gray-700/50">
                                         {staff.map(person => (
@@ -2726,7 +2733,7 @@ const ComplaintFormPopup = ({ onClose, onSave, therapists, branches, initialData
     const [isSaving, setIsSaving] = useState(false);
     const [formData, setFormData] = useState({
         therapistName: '', customerName: '', complaintDate: new Date().toISOString().split('T')[0],
-        cabang: '', complaintDetails: '', status: 'Baru', resolutionDetails: '',
+        cabang: '', complaintCategory: '', complaintDetails: '', status: 'Baru', resolutionDetails: '',
         reportedBy: currentUser?.nama || ''
     });
     const [therapistSuggestions, setTherapistSuggestions] = useState([]);
@@ -2738,6 +2745,7 @@ const ComplaintFormPopup = ({ onClose, onSave, therapists, branches, initialData
                 customerName: initialData.customerName || '',
                 complaintDate: initialData.complaintDate || new Date().toISOString().split('T')[0],
                 cabang: initialData.cabang || '',
+                complaintCategory: initialData.complaintCategory || '',
                 complaintDetails: initialData.complaintDetails || '',
                 status: initialData.status || 'Baru',
                 resolutionDetails: initialData.resolutionDetails || '',
@@ -2799,6 +2807,15 @@ const ComplaintFormPopup = ({ onClose, onSave, therapists, branches, initialData
                         <div><label className="block mb-2 text-gray-300">Cabang</label><select name="cabang" value={formData.cabang} onChange={handleChange} className="w-full select-rounded-border" required><option value="">Pilih Cabang</option>{branches.map(b => <option key={b} value={b}>{b}</option>)}</select></div>
                         <div><label className="block mb-2 text-gray-300">Nama Customer</label><input type="text" name="customerName" value={formData.customerName} onChange={handleChange} className="w-full input-rounded-border" /></div>
                         <div><label className="block mb-2 text-gray-300">Tanggal Komplain</label><input type="date" name="complaintDate" value={formData.complaintDate} onChange={handleChange} className="w-full input-rounded-border" required /></div>
+                    </div>
+                    <div>
+                        <label className="block mb-2 text-gray-300">Kategori Komplain</label>
+                        <select name="complaintCategory" value={formData.complaintCategory} onChange={handleChange} className="w-full select-rounded-border" required>
+                            <option value="">Pilih Kategori</option>
+                            <option value="Reflexology">Reflexology</option>
+                            <option value="Athletic Massage">Athletic Massage</option>
+                            <option value="Seitai">Seitai</option>
+                        </select>
                     </div>
                     <div><label className="block mb-2 text-gray-300">Detail Komplain</label><textarea name="complaintDetails" value={formData.complaintDetails} onChange={handleChange} className="w-full textarea-rounded-border h-28" required></textarea></div>
                     {initialData && (
@@ -3757,6 +3774,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
